@@ -20,7 +20,6 @@
           shellHook = ''
             export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [
               pkgs.zlib
-              # Add paths to other libraries if needed
             ]}:$LD_LIBRARY_PATH
           '';
         };
