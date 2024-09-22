@@ -4,7 +4,8 @@ from collections import defaultdict
 import statistics
 import plotly.graph_objects as go
 from typing import DefaultDict
-
+import plotly.express as px
+import math
 
 def process_csv_file(file_path: str) -> DefaultDict[float, list[float]]:
     data: DefaultDict[float, list[float]] = defaultdict(list)
@@ -16,7 +17,6 @@ def process_csv_file(file_path: str) -> DefaultDict[float, list[float]]:
             data[p].append(age)
     return data
 
-
 def process_all_csv_files(directory: str) -> dict[int, DefaultDict[float, list[float]]]:
     subnet_data: dict[int, DefaultDict[float, list[float]]] = {}
     for filename in os.listdir(directory):
@@ -26,27 +26,31 @@ def process_all_csv_files(directory: str) -> dict[int, DefaultDict[float, list[f
             subnet_data[subnet] = process_csv_file(file_path)
     return subnet_data
 
-
 def calculate_average_ages(subnet_data: dict[int, DefaultDict[float, list[float]]]) -> dict[int, dict[float, float]]:
     avg_data: dict[int, dict[float, float]] = {}
     for subnet, data in subnet_data.items():
-        avg_data[subnet] = {p: statistics.mean(
-            ages) for p, ages in data.items()}
+        avg_data[subnet] = {p: statistics.mean(ages) for p, ages in data.items()}
     return avg_data
-
 
 def create_plot(avg_data: dict[int, dict[float, float]], output_folder: str) -> None:
     fig = go.Figure()
 
-    for subnet, data in avg_data.items():
+    # Generate a color palette with distinct colors
+    color_palette = px.colors.qualitative.Plotly + px.colors.qualitative.D3
+
+    max_y_value = 0
+
+    for i, (subnet, data) in enumerate(avg_data.items()):
         p_values: list[float] = sorted(data.keys())
         avg_ages: list[float] = [data[p] for p in p_values]
+        max_y_value = max(max_y_value, max(avg_ages))
 
         fig.add_trace(go.Scatter(
             x=p_values,
             y=avg_ages,
             mode='lines+markers',
-            name=f'Subnet {subnet}'
+            name=f'Subnet {subnet}',
+            line=dict(color=color_palette[i % len(color_palette)])
         ))
 
     fig.update_layout(
@@ -55,14 +59,30 @@ def create_plot(avg_data: dict[int, dict[float, float]], output_folder: str) -> 
         yaxis_title='Average Black Box Age',
         font=dict(size=12),
         xaxis=dict(type='log'),
-        yaxis=dict(type='log'),
+        yaxis=dict(
+            type='log',
+            range=[0, math.log10(max_y_value)],
+            showticklabels=False,
+        ),
         legend_title='Subnets',
         plot_bgcolor='white'
     )
 
+    # Add only the maximum y-axis value
+    fig.add_annotation(
+        x=0,
+        y=max_y_value,
+        xref="paper",
+        yref="y",
+        text=f"{max_y_value:.2f}",
+        showarrow=False,
+        yanchor="bottom",
+        xanchor="right",
+        xshift=-5,
+    )
+
     os.makedirs(output_folder, exist_ok=True)
-    output_path: str = os.path.join(
-        output_folder, "avg_black_box_age_vs_copier_margin.png")
+    output_path: str = os.path.join(output_folder, "avg_black_box_age_vs_copier_margin.png")
     fig.write_image(output_path)
     print(f"Plot saved as {output_path}")
 
