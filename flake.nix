@@ -21,6 +21,8 @@
               plotly
               numpy
               kaleido
+              seaborn
+              matplotlib
               # Add any other Python packages you need here
             ]))
           ];
