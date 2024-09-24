@@ -8,10 +8,8 @@ For more information on profitability calculation and CSV data production, pleas
 
 ## Installation
 
-To install the required dependencies, run:
+Install direnv and nix
 
 ```sh
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+direnv allow
 ```
