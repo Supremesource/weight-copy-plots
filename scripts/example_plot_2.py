@@ -2,15 +2,15 @@ import os
 import csv
 from collections import defaultdict
 import statistics
-import plotly.graph_objects as go
 import seaborn as sns
-from typing import DefaultDict
-import plotly.express as px
 import matplotlib.pyplot as plt
-import math
 import pandas as pd
 import matplotlib.colors as mcolors
 import colorsys
+import numpy as np
+from scipy.interpolate import interp1d
+from typing import DefaultDict
+import re
 
 
 def process_csv_file(file_path: str) -> DefaultDict[float, list[float]]:
@@ -41,6 +41,7 @@ def calculate_average_ages(subnet_data: dict[int, DefaultDict[float, list[float]
             ages) for p, ages in data.items()}
     return avg_data
 
+
 def create_plot(avg_data: dict[int, dict[float, float]], output_folder: str) -> None:
     # Convert the data to a format suitable for Seaborn
     plot_data = []
@@ -51,61 +52,92 @@ def create_plot(avg_data: dict[int, dict[float, float]], output_folder: str) -> 
 
     df = pd.DataFrame(plot_data)
 
+    # Calculate the average encryption period across all subnets
+    avg_encryption_period = df.groupby('Copier Margin')[
+        'Encryption Period'].mean().reset_index()
+
     # Set up the plot style
-    sns.set_style("darkgrid")
-    plt.figure(figsize=(12, 8))
+    sns.set_style("whitegrid")
+    fig, ax1 = plt.subplots(figsize=(24, 14))  # Increased figure size
 
     # Create a custom color palette with distinct, visible colors
     num_subnets = len(set(df['Subnet']))
-    
+
     def generate_colors(n):
         base_colors = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', 
-            '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78', 
-            '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d2', '#c7c7c7', 
+            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
+            '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78',
+            '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d2', '#c7c7c7',
             '#dbdb8d', '#9edae5', '#393b79', '#637939', '#8c6d31', '#843c39'
         ]
-        
+
         if n <= len(base_colors):
             return base_colors[:n]
-        
+
         additional_colors = []
         for i in range(n - len(base_colors)):
             hue = i / (n - len(base_colors))
-            rgb = colorsys.hsv_to_rgb(hue, 0.7, 0.7)  # Reduced saturation and value
+            rgb = colorsys.hsv_to_rgb(hue, 0.7, 0.7)
             additional_colors.append(mcolors.rgb2hex(rgb))
-        
+
         return base_colors + additional_colors
 
     colors = generate_colors(num_subnets)
-    color_palette = {subnet: color for subnet, color in zip(sorted(set(df['Subnet'])), colors)}
+    color_palette = {subnet: color for subnet,
+                     color in zip(sorted(set(df['Subnet'])), colors)}
 
-    # Create the plot
+    # Create the plot with increased alpha for individual subnet lines
     sns.lineplot(data=df, x='Copier Margin', y='Encryption Period',
-                 hue='Subnet', marker='o', palette=color_palette)
+                 hue='Subnet', marker='o', palette=color_palette, alpha=1.0, ax=ax1)
+
+    # Plot the average line
+    avg_line = ax1.plot(avg_encryption_period['Copier Margin'], avg_encryption_period['Encryption Period'],
+                        color='black', linewidth=3, label='Average')
 
     # Customize the plot
-    plt.title(
-        'copier_margin Parameter Influence on Average Delay Length (epochs)',
-        fontsize=16, fontweight='bold')
-    plt.xlabel('copier_margin (p)', fontsize=12)
-    plt.ylabel('Encryption Period (epochs)', fontsize=12)
-    plt.legend(title='Subnets', title_fontsize='12', fontsize='10',
-               bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax1.set_title('copier_margin Parameter Influence on Average Delay Length (epochs)',
+                  fontsize=20, fontweight='bold')
+    ax1.set_xlabel('copier_margin (p)', fontsize=16)
+    ax1.set_ylabel('Encryption Period (epochs)', fontsize=16)
+    ax1.tick_params(axis='both', which='major', labelsize=14)
+
+    # Create custom legends
+    subnet_handles, subnet_labels = ax1.get_legend_handles_labels()
+
+    # Sort subnets numerically
+    def extract_subnet_number(label):
+        match = re.search(r'Subnet (\d+)', label)
+        return int(match.group(1)) if match else 0
+
+    sorted_subnets = sorted(zip(subnet_handles, subnet_labels),
+                            key=lambda x: extract_subnet_number(x[1]))
+    subnet_handles, subnet_labels = zip(*sorted_subnets)
+
+    # Remove the auto-generated legend
+    ax1.get_legend().remove()
+
+    # Create separate legend for subnets outside the plot with larger font size
+    fig.subplots_adjust(right=0.65)  # Make even more room for the legend
+    subnet_legend = fig.legend(subnet_handles, subnet_labels, loc='center right',
+                               bbox_to_anchor=(1.0, 0.5), fontsize=14, title='Subnets',
+                               title_fontsize=18, ncol=1, borderaxespad=0.)
+
+    # Create legend for Average line with larger font size
+    ax1.legend(avg_line, ['Average'], loc='upper right', fontsize=16)
 
     # Ensure y-axis starts at 0
-    plt.ylim(bottom=0)
+    ax1.set_ylim(bottom=0)
 
     # Add a light background color
-    plt.gca().set_facecolor('#f0f0f0')
+    ax1.set_facecolor('#f0f0f0')
 
-    # Adjust layout to prevent cutting off legend
+    # Adjust layout to prevent cutting off legends
     plt.tight_layout()
 
     # Save the plot
     os.makedirs(output_folder, exist_ok=True)
     output_path = os.path.join(
-        output_folder, "avg_black_box_age_vs_copier_margin.png")
+        output_folder, "avg_black_box_age_vs_copier_margin_with_average.png")
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Plot saved as {output_path}")
