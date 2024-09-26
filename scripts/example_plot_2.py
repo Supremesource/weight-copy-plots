@@ -19,7 +19,7 @@ def process_csv_file(file_path: str) -> DefaultDict[float, list[float]]:
         reader = csv.DictReader(csvfile)
         for row in reader:
             p: float = float(row['Copier Margin'])
-            age: float = float(row['Black Box Age'])
+            age: float = float(row['Encryption Window Length'])
             data[p].append(age)
     return data
 
@@ -144,7 +144,7 @@ def create_plot(avg_data: dict[int, dict[float, float]], output_folder: str) -> 
 
 
 # Directory containing the CSV files
-csv_directory: str = 'csv'
+csv_directory: str = 'csv/optimal'
 
 # Directory to save the output PNG
 output_directory: str = 'examples'

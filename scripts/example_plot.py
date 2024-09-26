@@ -12,7 +12,7 @@ def process_csv_file(file_path: str) -> list[float]:
         reader = csv.DictReader(csvfile)
         for row in reader:
             if float(row['Copier Margin']) == 0:
-                ages.append(float(row['Black Box Age']))
+                ages.append(float(row['Encryption Window Length']))
     return ages
 
 
@@ -45,9 +45,9 @@ def create_average_age_plot(average_ages: dict[int, float], output_folder: str) 
     )])
 
     fig.update_layout(
-        title='Average Black Box Age by Subnet',
+        title='Average Encryption Window Length by Subnet',
         xaxis_title='Subnet',
-        yaxis_title='Average Black Box Age',
+        yaxis_title='Average Encryption Window Length',
         font=dict(size=12),
         xaxis=dict(tickmode='linear'),
         yaxis=dict(gridcolor='lightgray', gridwidth=0.5),
@@ -82,8 +82,8 @@ create_average_age_plot(average_ages, output_directory)
 all_ages: list[float] = [age for ages in subnet_data.values() for age in ages]
 print(f"\nOverall statistics:")
 print(
-    f"Average Black Box Age across all subnets: {statistics.mean(all_ages):.2f}")
+    f"Average Encryption Window Length across all subnets: {statistics.mean(all_ages):.2f}")
 print(
-    f"Median Black Box Age across all subnets: {statistics.median(all_ages):.2f}")
-print(f"Maximum Black Box Age across all subnets: {max(all_ages):.2f}")
-print(f"Minimum Black Box Age across all subnets: {min(all_ages):.2f}")
+    f"Median Encryption Window Length across all subnets: {statistics.median(all_ages):.2f}")
+print(f"Maximum Encryption Window Length across all subnets: {max(all_ages):.2f}")
+print(f"Minimum Encryption Window Length across all subnets: {min(all_ages):.2f}")

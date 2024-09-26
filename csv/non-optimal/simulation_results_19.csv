@@ -1,4 +1,4 @@
-Copier Margin,Block Number,Cumulative Copier Dividends,Cumulative Average Delegate Dividends,Gini Coefficient,Encryption Window,Black Box Age
+Copier Margin,Block Number,Cumulative Copier Dividends,Cumulative Average Delegate Dividends,Gini Coefficient,Encryption Window,Encryption Window Length
 0,3600360,3259.0,3328.310319782197,0.0000,1,1
 0,3620880,183687.0,183713.25044868942,0.2718,2,57
 0,3641400,176906.0,177087.8621077477,0.2792,3,57
